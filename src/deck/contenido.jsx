@@ -176,7 +176,7 @@ export const COLS = [
       <T tema="t1" eti="E.10 · Actividad 1 (40 %)">Cómo se califica la demo</T>
       <Cards cols={3}>
         <Card t="Demo funcional desde main · 15" c="#C6F33A">Corre con MySQL y los módulos reales: flujo feliz, un caso alterno y la integración con otro módulo, sin errores.</Card>
-        <Card t="Cobertura de lo desarrollado · 10" c="#6EA8FF" frag>Historias terminadas, contratos que ofrece y consume, el Release 1.0.0 y la wiki del módulo al día.</Card>
+        <Card t="Cobertura y documentación · 10" c="#6EA8FF" frag>Historias terminadas, contratos que ofrece y consume, y la wiki del módulo completa desde el Sprint 1 hasta la demo.</Card>
         <Card t="Presentación y tiempo · 15" c="#FF8A3D" frag>Organizada, dentro de los 15 minutos y con la participación de todos.</Card>
       </Cards>
       <p className="d-sub fragment">La nota de la demo es la misma para todo el equipo. El otro 60 % es individual: la revisión técnica (tema 4).</p>
@@ -397,7 +397,7 @@ main ──●── congelamiento (acuerdo de SM, hasta el 25/11)
       <T tema="t4" eti="E.10 · Rúbrica">Cómo se reparten los 100 puntos</T>
       <Tabla head={['Actividad', 'Criterio', 'Pts']} rows={[
         ['1 · Demo (equipo)', 'Demo funcional desde main', '15'],
-        ['', 'Cobertura de lo desarrollado', '10'],
+        ['', 'Cobertura de lo desarrollado y documentación (wiki del Sprint 1 a la demo)', '10'],
         ['', 'Presentación y tiempo', '15'],
         ['2 · Revisión técnica (individual)', 'Teoría y arquitectura', '15'],
         ['', 'Defensa de su aporte', '15'],
@@ -405,6 +405,16 @@ main ──●── congelamiento (acuerdo de SM, hasta el 25/11)
         ['', 'Integraciones', '10'],
       ]} small />
       <p className="d-sub fragment">Niveles: Muy bueno (completo) · Aceptable (≈ 2/3) · Necesita mejorar (≈ 1/3) · No se presentó (0).</p>
+    </>,
+    <>
+      <T tema="t4" eti="E.10 · Documentación">La wiki completa, del Sprint 1 a la demo</T>
+      <Tabla head={['Periodo', 'Páginas que deben estar completas']} rows={[
+        ['Inicio del proyecto', '4Ps, Casos-de-uso, Plan-de-accion y POCs'],
+        ['Sprints 1 a 4', 'Actas de cada sprint (Planning con objetivo SMART, Daily, Refinamiento, Review y Retrospectiva, con el enlace de cada reunión) y Seguimiento de cada sprint'],
+        ['Laboratorios 6 a 8', 'Patrones, Pruebas-unitarias, Pipeline-CI, Revision-de-codigo y las páginas individuales de cada laboratorio'],
+        ['Integración y demo', 'Actas/Integracion, Seguimiento/Integracion, Demo y Release-1.0.0'],
+      ]} />
+      <p className="d-sub fragment">Hasta el <b>domingo 29/11, 23:59</b>. Se revisa en el criterio de cobertura y documentación: la wiki debe coincidir con GitLab y con la demo. Ejemplo completo: <M>Modulos/Usuarios</M>.</p>
     </>,
     <>
       <T tema="t4" eti="Teoría">Arquitectura limpia y hexagonal</T>
@@ -491,7 +501,7 @@ public void cancel(String reason) {
         <>Los <b>requerimientos FUN e INT</b> del módulo tienen historia cerrada con su MR fusionado, o se explica por qué quedaron fuera.</>,
         <>El <b>pipeline de main está en verde</b>: linter con 0 infracciones, pruebas y cobertura ≥ 80 % en dominio y aplicación.</>,
         <><M>delivery-system</M> <b>arranca con MySQL</b> y todos los módulos, y el flujo de punta a punta funciona.</>,
-        <>La <b>wiki del módulo</b> está completa, incluidas Demo y Release-1.0.0.</>,
+        <>La <b>wiki del módulo</b> está completa desde el Sprint 1 hasta la demo, incluidas Demo y Release-1.0.0 (hasta el 29/11).</>,
         <>Existe el <b>tag v1.0.0</b> y su <b>Release</b> con las notas de la versión.</>,
       ]} />
     </>,
