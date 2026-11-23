@@ -1,7 +1,5 @@
 node_modules
 dist
-public/diagramas/*.finalize*.json
-public/diagramas/*.delivery.json
-*.local
-public/diagramas/*.browser-check.json
-public/diagramas/*.browser-check.json
+.env
+.env.local
+target/

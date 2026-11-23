@@ -6,6 +6,6 @@ import './styles/semana6.css';
 import './styles/sd2.css';
 import './styles/semana7.css';
 import './styles/semana8.css';
-import './styles/ds2s9.css';
+import './styles/semana10.css';
 
 createRoot(document.getElementById('root')).render(<App />);

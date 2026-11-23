@@ -1,0 +1,106 @@
+/* ===================== Semana 10 · diagramas animados (demo, versiones, gestión, entregables) =====================
+   Cada pieza arranca oculta y se anima cuando su diapositiva está presente (.present). --d = retraso. */
+
+@keyframes s10-in { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes s10-pop { 0% { opacity: 0; transform: scale(.8); } 70% { opacity: 1; transform: scale(1.06); } 100% { opacity: 1; transform: none; } }
+@keyframes s10-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes s10-grow-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes s10-draw { from { stroke-dashoffset: 1600; } to { stroke-dashoffset: 0; } }
+@keyframes s10-glow { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 0 4px var(--c), 0 0 30px var(--c); } }
+
+.dg10-step, .dg10-time .bar > div, .dg10-time .row, .dg10-semver .num span, .dg10-semver .parts > div, .dg10-tags .tag,
+.dg10-tri .v, .dg10-tri .scrum, .dg10-bars .col, .dg10-risk .cell span, .dg10-ent .grp, .dg10-ent p { opacity: 0; }
+.present .dg10-step, .present .dg10-time .row, .present .dg10-semver .parts > div, .present .dg10-tags .tag,
+.present .dg10-tri .v, .present .dg10-tri .scrum, .present .dg10-bars .col, .present .dg10-ent .grp, .present .dg10-ent p { animation: s10-in .6s cubic-bezier(.2,.8,.2,1) var(--d, 0s) forwards; }
+.present .dg10-semver .num span, .present .dg10-risk .cell span { animation: s10-pop .6s ease-out var(--d, 0s) forwards; }
+
+/* 1 · flujo de la demo */
+.dg10-flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 36px; }
+.dg10-step { position: relative; background: #141823; border: 2px solid var(--c); border-radius: 16px; padding: 20px; display: grid; gap: 8px; align-content: start; }
+.present .dg10-step { animation: s10-in .6s ease-out var(--d) forwards, s10-glow 5s ease-in-out calc(var(--d) + .8s) infinite; }
+.dg10-step .n { font-size: 20px; color: var(--c); }
+.dg10-step b { font-family: var(--f-display); font-size: 32px; color: #fff; }
+.dg10-step p { font-size: 22px !important; color: #C9D1DC; line-height: 1.35 !important; }
+.dg10-step .mod { font-size: 17px; color: #A7B0BE; }
+.dg10-step .con { font-size: 17px; color: var(--c); border: 1px solid var(--c); border-radius: 999px; padding: 3px 10px; justify-self: start; }
+.dg10-step i { position: absolute; right: -32px; top: 42%; font-style: normal; font-size: 30px; color: #6B7686; }
+
+/* 2 · tiempos de la demo */
+.dg10-time { display: grid; gap: 30px; }
+.dg10-time .bar { display: flex; height: 70px; border-radius: 14px; overflow: hidden; }
+.dg10-time .bar > div { background: var(--c); display: grid; place-items: center; transform-origin: left; }
+.present .dg10-time .bar > div { animation: s10-in .1s linear var(--d) forwards, s10-grow-x .6s ease-out var(--d) both; }
+.dg10-time .bar b { font-size: 22px; color: #0B0D13; }
+.dg10-time .rows { display: grid; gap: 14px; }
+.dg10-time .row { display: grid; grid-template-columns: 20px 230px 1fr; gap: 18px; align-items: center; }
+.dg10-time .row i { width: 18px; height: 18px; border-radius: 50%; background: var(--c); }
+.dg10-time .row b { font-size: 28px; color: #fff; }
+.dg10-time .row span { font-size: 24px; color: #C9D1DC; }
+
+/* 3 · SemVer */
+.dg10-semver { display: grid; grid-template-columns: 1fr 1.2fr; gap: 60px; align-items: center; }
+.dg10-semver .num { display: flex; justify-content: center; font-family: var(--f-display); font-size: 260px; font-weight: 800; line-height: 1; }
+.dg10-semver .num span { color: var(--c); display: inline-block; }
+.dg10-semver .num em { font-style: normal; color: #6B7686; }
+.dg10-semver .parts { display: grid; gap: 22px; }
+.dg10-semver .parts > div { background: #141823; border-left: 8px solid var(--c); border-radius: 12px; padding: 18px 24px; }
+.dg10-semver .parts b { font-size: 30px; color: var(--c); }
+.dg10-semver .parts p { font-size: 24px !important; color: #D6DBE4; }
+
+/* 4 · tags en el tiempo */
+.dg10-tags { position: relative; display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px; padding-top: 40px; }
+.dg10-tags .line { position: absolute; left: 0; right: 0; top: 52px; height: 4px; }
+.dg10-tags .line i { display: block; height: 100%; background: linear-gradient(90deg, #C6F33A, #C6F33A 66%, #FFD166 66%, #B78CFF); transform-origin: left; }
+.present .dg10-tags .line i { animation: s10-grow-x 2.2s ease-out .2s both; }
+.dg10-tags .tag { position: relative; display: grid; gap: 8px; justify-items: start; }
+.dg10-tags .dot { width: 28px; height: 28px; border-radius: 50%; background: #C6F33A; border: 4px solid #0B0D13; }
+.dg10-tags .tag.prox .dot { background: #FFD166; } .dg10-tags .tag.meta .dot { background: #B78CFF; box-shadow: 0 0 20px #B78CFF; }
+.dg10-tags .tag b { font-size: 30px; color: #fff; }
+.dg10-tags .tag .f { font-size: 19px; color: #A7B0BE; }
+.dg10-tags .tag p { font-size: 22px !important; color: #C9D1DC; line-height: 1.35 !important; }
+
+/* 5 · triángulo */
+.dg10-tri { position: relative; display: grid; grid-template-columns: 600px 1fr; gap: 60px; align-items: center; height: 520px; margin-top: 70px; }
+.dg10-tri svg .tri { stroke-dasharray: 1600; stroke-dashoffset: 1600; }
+.present .dg10-tri svg .tri { animation: s10-draw 1.4s ease-out .1s forwards; }
+.dg10-tri .v { position: absolute; font-size: 26px !important; color: #C9D1DC; text-align: center; width: 240px; line-height: 1.3 !important; }
+.dg10-tri .v b { font-size: 34px; color: #6EA8FF; }
+.dg10-tri .top { left: 180px; top: -66px; } .dg10-tri .left { left: -60px; top: 490px; } .dg10-tri .right { left: 420px; top: 490px; }
+.dg10-tri .mid { left: 180px; top: 300px; } .dg10-tri .mid b { color: #C6F33A; font-size: 40px; }
+.dg10-tri .scrum { grid-column: 2; background: #141823; border-left: 8px solid #C6F33A; border-radius: 14px; padding: 28px; display: grid; gap: 12px; }
+.dg10-tri .scrum > b { font-size: 34px; color: #C6F33A; }
+.dg10-tri .scrum p { font-size: 27px !important; color: #D6DBE4; }
+.dg10-tri .scrum p b { color: #fff; }
+
+/* 6 · barras por sprint */
+.dg10-bars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 50px; height: 460px; align-items: end; }
+.dg10-bars .col { display: grid; grid-template-rows: auto 1fr auto auto; gap: 10px; height: 100%; justify-items: center; }
+.dg10-bars .col > b { font-size: 46px; color: #6EA8FF; font-family: var(--f-display); }
+.dg10-bars .bar { width: 120px; display: flex; align-items: flex-end; background: #141823; border-radius: 12px; overflow: hidden; }
+.dg10-bars .bar i { display: block; width: 100%; background: linear-gradient(#6EA8FF, #3D6FC4); transform-origin: bottom; }
+.present .dg10-bars .bar i { animation: s10-grow-y 1s cubic-bezier(.2,.8,.2,1) var(--d) both; }
+.dg10-bars .col span { font-size: 26px; color: #fff; }
+.dg10-bars .col em { font-style: normal; font-size: 18px; color: #A7B0BE; }
+
+/* 7 · matriz de riesgos */
+.dg10-risk { display: grid; grid-template-columns: 40px 1fr; grid-template-rows: 1fr auto; gap: 10px; }
+.dg10-risk .ylab { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 20px !important; color: #A7B0BE; text-align: center; }
+.dg10-risk .xlab { grid-column: 2; font-size: 20px !important; color: #A7B0BE; text-align: center; }
+.dg10-risk .grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 150px); gap: 8px; }
+.dg10-risk .cell { border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+.dg10-risk .cell.bajo { background: #1B2A12; } .dg10-risk .cell.medio { background: #2B2512; } .dg10-risk .cell.alto { background: #2A1520; }
+.dg10-risk .cell span { font-size: 21px; color: #fff; background: #0F1117cc; border-radius: 8px; padding: 6px 10px; display: block; }
+
+/* 8 · entregables */
+.dg10-ent { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+.dg10-ent .grp { background: #141823; border-top: 8px solid var(--c); border-radius: 16px; padding: 26px; display: grid; gap: 16px; align-content: start; }
+.dg10-ent .grp > b { font-family: var(--f-display); font-size: 34px; color: var(--c); }
+.dg10-ent p { font-size: 24px !important; color: #D6DBE4; display: grid; grid-template-columns: 34px 1fr; }
+.dg10-ent p i { font-style: normal; color: var(--c); font-weight: 700; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dg10-step, .dg10-time .bar > div, .dg10-time .row, .dg10-semver .num span, .dg10-semver .parts > div, .dg10-tags .tag,
+  .dg10-tri .v, .dg10-tri .scrum, .dg10-bars .col, .dg10-risk .cell span, .dg10-ent .grp, .dg10-ent p { opacity: 1 !important; animation: none !important; }
+  .dg10-tags .line i, .dg10-bars .bar i { animation: none !important; transform: none !important; }
+  .dg10-tri svg .tri { stroke-dashoffset: 0 !important; animation: none !important; }
+}

@@ -3,24 +3,14 @@ import hljs from 'highlight.js/lib/core';
 import java from 'highlight.js/lib/languages/java';
 import yaml from 'highlight.js/lib/languages/yaml';
 import xml from 'highlight.js/lib/languages/xml';
-import json from 'highlight.js/lib/languages/json';
-import http from 'highlight.js/lib/languages/http';
-import javascript from 'highlight.js/lib/languages/javascript';
 import bash from 'highlight.js/lib/languages/bash';
-import dockerfile from 'highlight.js/lib/languages/dockerfile';
-import markdown from 'highlight.js/lib/languages/markdown';
 import QRCode from 'qrcode';
-import { TEMA } from '../data/temas.js';
+import { TEMA, TEMAS } from '../data/temas.js';
 
 hljs.registerLanguage('java', java);
-hljs.registerLanguage('markdown', markdown);
 hljs.registerLanguage('yaml', yaml);
 hljs.registerLanguage('xml', xml);
-hljs.registerLanguage('json', json);
-hljs.registerLanguage('http', http);
-hljs.registerLanguage('javascript', javascript);
 hljs.registerLanguage('bash', bash);
-hljs.registerLanguage('dockerfile', dockerfile);
 const BASE = import.meta.env.BASE_URL;
 
 /** Encabezado de diapositiva: etiqueta del tema + título. */
@@ -41,7 +31,7 @@ export function Portada({ tema, pregunta }) {
   return (
     <div className="d-portada" style={{ '--c': t.color }}>
       <p className="d-num">{String(t.n).padStart(2, '0')}</p>
-      <p className="d-eti">Tema {t.n} de 4 · {t.min} min</p>
+      <p className="d-eti">Tema {t.n} de {TEMAS.length} · {t.min} min</p>
       <h1>{t.titulo}</h1>
       <p className="d-preg">{pregunta}</p>
       <p className="d-nav mono">↓ profundizar · → siguiente tema</p>
@@ -89,20 +79,20 @@ export function Card({ t, c = '#C6F33A', children, frag }) {
   return <div className={`d-card ${frag ? 'fragment' : ''}`} style={{ borderTopColor: c }}><h3>{t}</h3><div>{children}</div></div>;
 }
 
-/** "¿Y en el capstone?": situaciones (izquierda) y lo que haría el equipo (derecha, fragmento). */
-export function YPixPro({ tema, items, cierre }) {
+/** "¿Y en el capstone?": escenarios (rojo), respuesta (verde, fragmento) y tarea para el equipo. */
+export function YCapstone({ tema, items, tarea }) {
   return (
     <>
-      <T tema={tema} eti="¿Y en el capstone?">Llévalo al Delivery System</T>
+      <T tema={tema} eti="¿Y en el capstone?">Aterrízalo en el Delivery System</T>
       <div className="d-ypix">
         {items.map(([q, a], i) => (
           <div key={i} className="d-ypix-row">
             <div className="q"><span className="mono">¿Qué pasaría si…?</span>{q}</div>
-            <div className="a fragment"><span className="mono">En el capstone…</span>{a}</div>
+            <div className="a fragment"><span className="mono">Su equipo debería…</span>{a}</div>
           </div>
         ))}
       </div>
-      {cierre && <p className="d-capstone fragment"><b>Idea clave:</b> {cierre}</p>}
+      <p className="d-capstone fragment"><b>Para el capstone:</b> {tarea}</p>
     </>
   );
 }

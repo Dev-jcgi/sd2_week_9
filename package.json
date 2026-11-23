@@ -1,9 +1,9 @@
 {
-  "name": "sd2-semana9-cerrar-proyecto",
+  "name": "sd2-semana9-demo-version",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "DS2 Semana 9 · Gestión de la recta final, versionado, entregables y demo del Capstone Delivery System",
+  "description": "DS2 Semana 9 · Laboratorio 9 (demo y versión 1.0.0), semana de integración y evaluación final del capstone Delivery System",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -11,9 +11,10 @@
   },
   "dependencies": {
     "canvas-confetti": "1.9.3",
-    "firebase": "^10.14.1",
+    "gsap": "3.12.5",
     "highlight.js": "11.11.1",
-    "qrcode": "1.5.4",
+    "peerjs": "1.5.4",
+    "qrcode": "^1.5.4",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "reveal.js": "5.2.1"

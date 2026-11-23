@@ -1,17 +1,17 @@
-import { T, Portada, Arch, Code, Cards, Card, YPixPro as YCapstone } from './piezas.jsx';
+import { T, Portada, Code, Cards, Card, YCapstone, QR } from './piezas.jsx';
 import { Receso, Agenda } from './extras.jsx';
-import { ACTIVIDAD } from '../data/actividades.js';
-import { QRClase, PreguntaSlide } from './vivo.jsx';
-import Recorte from '../components/Recorte.jsx';
-import Versionador from '../components/Versionador.jsx';
-import Semaforo from '../components/Semaforo.jsx';
-import EnsayoDemo from '../components/EnsayoDemo.jsx';
+import { DemoFlujo, DemoTiempo, SemverAnatomia, TagLinea, Triangulo, BarrasSprint, MatrizRiesgo, Entregables } from './diagramas10.jsx';
+import { ACTIVIDADES } from '../data/actividades.js';
+import Pregunta from '../components/Pregunta.jsx';
+import Marcador from '../components/Marcador.jsx';
+import { useSesion, respondieron } from '../lib/sesion.js';
+import Podio from '../components/Podio.jsx';
 
-/* Presentación de la Semana 9 · DS2 · Cerrar el proyecto: del Sprint 4 a la demo final del Capstone Delivery System.
-   Hilo: «quedan pocos días para la demo del 30/11 y todos los pom.xml dicen 0.0.1-SNAPSHOT».
-   Orden: gestionar la recta final → versionar lo que se entrega → definir los entregables → demostrarlo.
-   Cada columna (→) es un tema o una actividad; sus diapositivas (↓) profundizan. */
+/* Presentación de la Semana 9 · Desarrollo de Software 2.
+   Cada columna (→) es un tema o una actividad; sus diapositivas (↓) profundizan.
+   Caso real: el capstone Delivery System (Laboratorio 9, la versión 1.0.0 y la evaluación del 30/11, 1/12 y 2/12). */
 
+const WIKI = 'https://gitlab.com/jala-university1/cohort-7/ES.CO.CSSD-125.GA.T2.26.M2/SE/capstone/-/wikis';
 const Lista = ({ items, frag }) => <ul className="d-list">{items.map((x, i) => <li key={i} className={frag ? 'fragment' : ''}>{x}</li>)}</ul>;
 const Tabla = ({ head, rows, small }) => (
   <table className={`d-tabla ${small ? 'sm' : ''}`}><thead><tr>{head.map((h) => <th key={h}>{h}</th>)}</tr></thead>
@@ -19,432 +19,530 @@ const Tabla = ({ head, rows, small }) => (
 );
 const Dos = ({ children, r = '1fr 1fr' }) => <div className="d-dos" style={{ gridTemplateColumns: r }}>{children}</div>;
 const Analogia = ({ titulo, children }) => <div className="d-analogia"><span className="mono">Analogía</span><h3>{titulo}</h3>{children}</div>;
-const Puente = ({ children }) => <p className="d-puente"><span className="mono">Siguiente →</span> {children}</p>;
-const Dato = ({ n, t, c }) => <div className="d-dato" style={{ '--c': c }}><b>{n}</b><span>{t}</span></div>;
+const Cita = ({ children, fuente }) => <blockquote className="d-cita"><p>{children}</p><cite className="mono">{fuente}</cite></blockquote>;
+const M = ({ children }) => <span className="mono">{children}</span>;
 
-function Actividad({ id, como }) {
-  const a = ACTIVIDAD[id];
-  return (
-    <div className="d-act" style={{ '--c': a.color }}>
-      <p className="d-eti"><span className="pill">ACTIVIDAD {a.n} DE 4</span> {a.momento} · {a.min} min</p>
-      <h1>{a.nombre}</h1>
-      <Dos r="1.3fr 1fr">
-        <div className="d-act-modos">
-          <div><span className="mono">Cómo funciona</span><p>Si ya entraste a la clase, no escanees otra vez: las preguntas te llegan solas al celular, cada una con su tiempo.</p></div>
-          <div><span className="mono">Al terminar el tiempo</span><p>Se revela la respuesta en la pantalla y en tu celular, con la explicación y tus puntos.</p></div>
-          <div><span className="mono">Qué repasa</span><p>{como}</p></div>
-        </div>
-        <QRClase size={250} libre={`#/actividades?a=${id}`} pie={`#/actividades · ${a.preguntas.length} preguntas`} />
-      </Dos>
-    </div>
-  );
+/** Código de respaldo: abre la actividad en un celular que no logra conectarse a la sesión. */
+const Codigo = ({ c, color, texto }) => <div className="d-codigo" style={{ '--c': color }}><span className="mono">{texto}</span><b>{c}</b></div>;
+
+/** QR de la sesión: con la sesión creada (#/profesor) lleva su id; sin sesión, a #/vivo. */
+function SesionQR({ size }) {
+  const s = useSesion();
+  return <QR ruta={s.id ? `#/vivo?s=${s.id}` : '#/vivo'} size={size} />;
 }
-const preguntas = (id) => ACTIVIDAD[id].preguntas.map((q) => <PreguntaSlide key={q.id} q={q} actividad={id} />);
+/** Estado en vivo de la sesión (solo con la sesión creada). */
+function EnVivo({ act }) {
+  const s = useSesion();
+  if (!s.id) return null;
+  if (!s.abierta) return <p className="d-vivo mono off"><i /> Sesión cerrada</p>;
+  const n = Object.keys(s.alumnos).length;
+  return <p className="d-vivo mono"><i /> {act ? `${respondieron(s.alumnos, act)} de ${n} ya respondieron` : `${s.conectados} celulares conectados · ${n} en la sesión`}</p>;
+}
+/** Podio: el de la sesión (por nombre y equipo) o, sin sesión, el marcador manual de equipos. */
+function PodioFinal() {
+  const s = useSesion();
+  return s.id ? <Podio alumnos={s.alumnos} /> : <Marcador />;
+}
+
+/* ── Actividades: portada con su código + una diapositiva por pregunta (modo pantalla, el profesor revela) ── */
+function actividad(a) {
+  return {
+    id: a.id, titulo: `Actividad ${a.n}`, kind: 'act', act: a.id,
+    slides: [
+      <div className="d-act" style={{ '--c': a.color }} key="i">
+        <p className="d-eti"><span className="pill">ACTIVIDAD {a.n} DE 4</span> {a.momento} · {a.min} min</p>
+        <h1>{a.nombre}</h1>
+        <Dos r="1.3fr 1fr">
+          <div className="d-act-modos">
+            <div><span className="mono">En tu celular</span><p>La actividad ya apareció en tu página de la sesión. Respondes y ves al momento si acertaste.</p></div>
+            <div><span className="mono">En la pantalla</span><p>Cada equipo discute y responde en voz alta. El equipo que acierta suma puntos en el marcador.</p></div>
+            <div className="d-act-items">{a.preguntas.map((q, i) => <div key={q.id}><span className="mono">{i + 1}</span><p>{q.q}</p></div>)}</div>
+          </div>
+          <div className="d-act-qr"><SesionQR size={190} /><p className="mono">¿Recién llegas? Escanea y entra</p><EnVivo act={a.id} /><Codigo c={a.codigo} color={a.color} texto="Si no conecta: código" /></div>
+        </Dos>
+      </div>,
+      ...a.preguntas.map((q) => (
+        <div className="d-pant" key={q.id}>
+          <Pregunta q={q} modo="pantalla" />
+          <Marcador compact />
+        </div>
+      )),
+    ],
+  };
+}
+const ACT = Object.fromEntries(ACTIVIDADES.map((a) => [a.id, actividad(a)]));
 
 export const COLS = [
   /* ───────────── INICIO ───────────── */
   { id: 'inicio', titulo: 'Inicio', slides: [
     <div className="d-hero" key="p">
       <p className="d-eti">Desarrollo de Software 2 · Sección E · Semana 9</p>
-      <h1>De sprint a <em>producto</em></h1>
-      <p className="d-preg">La demo final del Delivery System es el <b>30 de noviembre</b>. Hoy todos los <span className="mono">pom.xml</span> dicen <span className="mono">0.0.1-SNAPSHOT</span>. ¿Cómo llegamos con un producto que se pueda entregar y mostrar?</p>
-      <div className="d-hero-tags mono"><span>Gestión</span><span>Versionado</span><span>Entregables</span><span>Demo</span></div>
-      <p className="d-nav mono">→ avanzar · ↓ profundizar · ESC vista general</p>
+      <h1>De la demo a la <em>versión 1.0</em></h1>
+      <p className="d-preg">Qué se entrega en el Laboratorio 9, cómo se prepara la demo, cómo se publica la versión 1.0.0 y cómo se evalúa a cada uno el 30/11, el 1/12 y el 2/12.</p>
+      <div className="d-hero-tags mono"><span>Lab 9</span><span>Demo</span><span>v1.0.0</span><span>Congelamiento</span><span>Evaluación</span></div>
+      <p className="d-nav mono">→ avanzar · ↓ profundizar · P marcador · ESC vista general</p>
     </div>,
     <>
-      <T eti="Agenda">Cuatro temas en el orden en que los van a vivir esta semana</T>
+      <T eti="Agenda">Dos horas para cerrar el proyecto</T>
       <Agenda />
+      <p className="d-sub">Receso de 10 minutos a la mitad. Las actividades suman puntos por equipo: A, B, C y D.</p>
     </>,
     <>
-      <T eti="Dónde estamos">El calendario del capstone</T>
-      <div className="d-datos">
-        <Dato n="Sprints 1–3" t="19 oct – 15 nov · módulos y contratos" c="#6EA8FF" />
-        <Dato n="Sprint 4" t="16 – 22 nov · últimas historias" c="#C6F33A" />
-        <Dato n="23 – 29 nov" t="integración, pruebas y ensayo" c="#FFD166" />
-        <Dato n="30 nov" t="demo final" c="#FF8A3D" />
-      </div>
-      <Dos r="1.15fr 1fr">
-        <Lista items={[
-          <>Cinco módulos (usuarios, catálogo, pedidos, pagos, entregas) que tienen que funcionar <b>juntos</b>.</>,
-          <>Hoy: cómo <b>gestionar</b> la última semana, <b>versionar</b> lo que se entrega, qué <b>entregables</b> van y cómo hacer una buena <b>demo</b>.</>,
-          <>Escaneen el código <b>una sola vez</b>: con él responden las 4 actividades.</>,
-        ]} />
-        <QRClase size={250} pie="#/actividades · déjenla abierta" />
+      <T eti="Entra a la sesión">Un solo código QR para toda la clase</T>
+      <Dos r="1fr 1fr">
+        <div className="d-act-qr"><SesionQR size={300} /><p className="mono">un solo código para toda la clase</p><EnVivo /></div>
+        <Cards cols={1}>
+          <Card t="1 · Escanea y entra" c="#FF8A3D">Escribe tu nombre y elige tu equipo. No hay que instalar nada.</Card>
+          <Card t="2 · No cierres la página" c="#6EA8FF">Cuando lleguemos a una actividad, aparece sola en tu celular.</Card>
+          <Card t="3 · Al final, tu resumen" c="#C6F33A">Cuando el profesor cierra la sesión, ves tus puntos por actividad.</Card>
+        </Cards>
       </Dos>
+    </>,
+    <>
+      <T eti="El hilo de hoy">Lo que queda hasta el final del curso</T>
+      <Tabla head={['Fecha', 'Qué', 'Quién']} rows={[
+        ['Hasta el miércoles 25/11', 'Reunión de SM: congelamiento de main (acta e issue de Acuerdo)', 'Los 4 SM'],
+        ['Ese mismo día', 'MR del practitioner: todos los pom.xml a 1.0.0', 'Practitioner'],
+        ['Viernes 27/11', 'Ensayo completo desde main, con -Pjpa y la base vacía', 'Todos'],
+        ['Domingo 29/11, 23:59', 'Entrega del Laboratorio 9 (demo y release)', 'Cada equipo'],
+        ['Lunes 30/11', 'Demo del producto y tag v1.0.0', 'Todos'],
+        ['Martes 1/12', 'Revisión técnica individual', 'Cada estudiante'],
+        ['Miércoles 2/12', 'Sesión conjunta con otra sección y otro practitioner', 'Todos'],
+      ]} />
     </>,
   ] },
 
-  /* ───────────── TEMA 1 · GESTIÓN ───────────── */
-  { id: 't1', tema: 't1', slides: [
-    <Portada key="p" tema="t1" pregunta="Quedan pocos días para la demo. ¿Cómo saben si van a llegar… antes de que sea tarde?" />,
+  ACT.a1,
+
+  /* ───────────── TEMA 1 · LA DEMO (LAB 9 · ACTIVIDAD 1) ───────────── */
+  { id: 't1', tema: 't1', titulo: 'Demo', slides: [
+    <Portada key="p" tema="t1" pregunta="Si el Product Owner solo pudiera ver 15 minutos de su trabajo, ¿qué le mostrarían?" />,
     <>
-      <T tema="t1" eti="El triángulo">Fecha fija, equipo fijo: lo que se mueve es el alcance</T>
-      <Dos r="1fr 1.1fr">
-        <div className="d-triangulo">
-          <svg viewBox="0 0 400 340" role="img" aria-label="Triángulo de alcance, tiempo y equipo con la calidad al centro">
-            <polygon points="200,20 380,320 20,320" className="tri" />
-            <text x="200" y="14" className="tri-v">ALCANCE · se ajusta</text>
-            <text x="380" y="338" className="tri-f" textAnchor="end">EQUIPO · fijo</text>
-            <text x="20" y="338" className="tri-f" textAnchor="start">TIEMPO · 30/11</text>
-            <text x="200" y="230" className="tri-c">calidad</text>
-          </svg>
+      <T tema="t1" eti="Definición">¿Qué es una demo del producto?</T>
+      <Dos r="1.2fr 1fr">
+        <div className="d-def">
+          <Cita fuente="The Scrum Guide (2020) · Sprint Review">El propósito de la Sprint Review es inspeccionar el resultado del sprint y determinar adaptaciones futuras. El equipo presenta los resultados de su trabajo a los interesados clave.</Cita>
+          <p>La <b>demo final</b> es la Sprint Review del proyecto: se muestra el <b>software funcionando</b>, no diapositivas del código.</p>
         </div>
-        <Lista items={[
-          <><b>Tiempo:</b> la demo es el 30 de noviembre. No se mueve.</>,
-          <><b>Equipo:</b> son los mismos cuatro equipos. Agregar gente a última hora retrasa (ley de Brooks).</>,
-          <><b>Alcance:</b> qué historias entran. <b>Es lo único que se ajusta</b>.</>,
-          <><b>Calidad</b> al centro: si se sacrifica, el producto falla en la demo.</>,
-        ]} />
+        <Cards cols={1}>
+          <Card t="Para el PO" c="#FF8A3D">¿Hace lo que pedían los requerimientos (FUN e INT)?</Card>
+          <Card t="Para el equipo" c="#6EA8FF" frag>Demostrar que entiende y puede defender lo que construyó.</Card>
+        </Cards>
       </Dos>
     </>,
     <>
-      <T tema="t1" eti="Medir">¿Cómo sé si voy a llegar?</T>
+      <T tema="t1" eti="Analogía">La prueba de manejo</T>
+      <Dos>
+        <Analogia titulo="Nadie compra un auto por su folleto">
+          <p>En una concesionaria no te leen la ficha técnica: te dan las llaves y das una vuelta. Lo que convence es manejarlo.</p>
+          <p className="fragment">La demo es esa vuelta: el PO ve el flujo real, con datos reales, de principio a fin.</p>
+        </Analogia>
+        <Cards cols={1}>
+          <Card t="El folleto = las diapositivas" c="#9298AA" frag>Sirven para el contexto: un minuto, no más.</Card>
+          <Card t="La vuelta = el flujo en vivo" c="#C6F33A" frag>Es lo que se evalúa.</Card>
+        </Cards>
+      </Dos>
+    </>,
+    <>
+      <T tema="t1" eti="Diagrama">El flujo de punta a punta del Delivery System</T>
+      <DemoFlujo />
+      <p className="d-sub">Cada paso cruza un contrato de <M>core</M>. La demo corre con los <b>módulos reales</b>; si un contrato no llegó a <M>main</M>, se usa su <i>fallback</i> y se dice en voz alta, no se esconde.</p>
+    </>,
+    <>
+      <T tema="t1" eti="Diagrama">El guion de una demo de 15 minutos</T>
+      <DemoTiempo />
+    </>,
+    <>
+      <T tema="t1" eti="Laboratorio 9 · Actividad 1">Lo que se entrega el domingo 29/11</T>
+      <Tabla head={['Entregable', 'Dónde', 'Qué contiene']} rows={[
+        ['Borrador de las diapositivas', 'Canvas (E.9)', 'Qué problema resuelve el módulo, quién lo usa, historias terminadas, contrato que ofrece y cuál consume'],
+        ['Página Demo', <M>Modulos/&lt;módulo&gt;/Demo</M>, 'Enlace a las diapositivas, reparto de los 15 minutos por integrante y datos de prueba'],
+        ['Errores de la semana', 'Issue (plantilla Bug) y MR', <>Lista en la página Demo: cada error con su issue y su rama <M>ISSUE-&lt;n&gt;/bug/…</M></>],
+        ['Prueba con MySQL', 'Seguimiento/Integracion', 'Flujo feliz y un caso alterno probados con -Pjpa y la base vacía'],
+      ]} />
+    </>,
+    <>
+      <T tema="t1" eti="Preparación">Lo que se prepara antes del 30/11</T>
       <Cards cols={3}>
-        <Card t="Velocidad" c="#C6F33A"><p>Puntos que el equipo <b>cierra</b> por sprint (el campo Weight de GitLab).</p><p>Sirve para planearse a sí mismo; <b>no</b> para comparar equipos.</p></Card>
-        <Card t="Burndown" c="#FFD166"><p>Trabajo que <b>falta</b> día a día contra una línea ideal.</p><p>Si la real va por encima, van atrasados: recortar <b>ya</b>.</p></Card>
-        <Card t="Board" c="#6EA8FF"><p>Open → To Do → In Progress → Review → Closed.</p><p>Muchas cosas en Review = cuello de botella en la aprobación.</p></Card>
+        <Card t="El build de la demo" c="#C6F33A">Desde <M>main</M>: el commit ensayado el 27/11, el mismo que lleva el tag <M>v1.0.0</M>. Nunca la rama de alguien.</Card>
+        <Card t="MySQL y base vacía" c="#6EA8FF" frag><M>docker compose up -d</M> y <M>./mvnw javafx:run -Pjpa</M>. Se demuestra con la persistencia real, no en memoria.</Card>
+        <Card t="Datos de prueba" c="#FF8A3D" frag><M>SampleUsers</M>, <M>SampleCatalog</M> y <M>SamplePaymentMethods</M>: los mismos ids en todos los módulos.</Card>
+        <Card t="Ensayo cronometrado" c="#B78CFF" frag>El viernes 27/11, de punta a punta y con el tiempo medido.</Card>
+        <Card t="Plan B" c="#FF6B8B" frag>La grabación del ensayo y un segundo juego de datos por si uno falla.</Card>
+        <Card t="Roles" c="#FFD166" frag>Quién conduce, quién muestra cada parte y quién responde qué. Todos hablan.</Card>
       </Cards>
-      <p className="d-capstone"><b>Hecho</b> = fusionado en main, con revisión, pipeline en verde y DoD marcada. Lo que está «casi» no cuenta.</p>
     </>,
     <>
-      <T tema="t1" eti="Priorizar">MoSCoW: qué entra si no alcanza</T>
-      <Tabla head={['Prioridad', 'Significa', 'En el Delivery System']} rows={[
-        ['Must', 'Sin esto la demo no tiene sentido', 'Pedido de punta a punta: login, catálogo con stock, pedido, pago, entrega con código'],
-        ['Should', 'Importante, pero la demo vive sin eso', 'Cancelar pedido (D-06), historial de pagos sin doble cobro'],
-        ['Could', 'Deseable si sobra tiempo', 'Cupones (D-03 ya los marcó opcionales), historial de entregas, MySQL completo'],
-        ['Won’t (por ahora)', 'Se dice en voz alta que no entra', 'App móvil, pagos reales'],
+      <T tema="t1" eti="E.10 · Actividad 1 (40 %)">Cómo se califica la demo</T>
+      <Cards cols={3}>
+        <Card t="Demo funcional desde main · 15" c="#C6F33A">Corre con MySQL y los módulos reales: flujo feliz, un caso alterno y la integración con otro módulo, sin errores.</Card>
+        <Card t="Cobertura de lo desarrollado · 10" c="#6EA8FF" frag>Historias terminadas, contratos que ofrece y consume, el Release 1.0.0 y la wiki del módulo al día.</Card>
+        <Card t="Presentación y tiempo · 15" c="#FF8A3D" frag>Organizada, dentro de los 15 minutos y con la participación de todos.</Card>
+      </Cards>
+      <p className="d-sub fragment">La nota de la demo es la misma para todo el equipo. El otro 60 % es individual: la revisión técnica (tema 4).</p>
+    </>,
+    <>
+      <T tema="t1" eti="Errores frecuentes">Lo que arruina una demo</T>
+      <Tabla head={['Error', 'Qué hacer en cambio']} rows={[
+        ['Mostrar el IDE y leer código', 'Mostrar la app; el código se abre solo si lo preguntan'],
+        ['Datos que se crean en vivo durante 5 minutos', 'Los datos de prueba ya cargados al arrancar'],
+        ['«Esto funcionaba ayer»', 'Probar el build de main el mismo día'],
+        ['Demostrar en memoria porque MySQL falla', 'Probar -Pjpa en el ensayo del 27/11 y corregir con un Bug antes del 29/11'],
+        ['Una persona hace toda la demo', 'Cada integrante muestra su parte y responde por ella'],
+        ['Esconder lo que falta', 'Decir qué falta y qué se usó en su lugar (fallback)'],
       ]} />
-    </>,
-    <>
-      <T tema="t1" eti="Simulador · ¿llegamos a la demo?" sub="Las historias que faltan para el 30/11. Toca una para sacarla del alcance, mueve la capacidad y agrega un imprevisto.">Recorta el alcance hasta que lleguen</T>
-      <Recorte />
-    </>,
-    <>
-      <T tema="t1" eti="Riesgos">Lo que puede salir mal, antes de que salga mal</T>
-      <Tabla small head={['Riesgo', 'Probabilidad', 'Impacto', 'Qué hacemos']} rows={[
-        ['Un módulo no se integra con los demás', 'Media', 'Alto', 'Integrar el lunes, no el viernes; los contratos de core tienen fallback (D-00)'],
-        ['Un MR rompe main el día antes', 'Media', 'Alto', 'Congelar alcance; solo correcciones con pipeline verde'],
-        ['MySQL o Docker no arranca en el salón', 'Media', 'Medio', 'Demo con perfil de memoria (-Pmemory) y video de respaldo'],
-        ['Falta alguien el día de la demo', 'Baja', 'Medio', 'Dos personas saben operar la demo de cada módulo'],
-        ['Historias «casi listas» sin pruebas', 'Alta', 'Medio', 'No entran a v1.0.0: se mencionan en «qué sigue»'],
-      ]} />
-    </>,
-    <>
-      <T tema="t1" eti="Coordinar varios equipos (LeSS)">Un producto, un Product Owner, una Sprint Review</T>
-      <Dos r="1fr 1fr">
-        <Lista items={[
-          <><b>Integración diaria:</b> todos fusionan a main cada día; el pipeline compila los siete proyectos juntos.</>,
-          <><b>Dependencias:</b> catálogo → pedidos → pagos → entregas. Si catálogo se atrasa, todos esperan.</>,
-          <><b>Fallback de core (D-00):</b> si un contrato no está listo, hay datos de prueba y un WARN: la demo no se cae.</>,
-        ]} />
-        <Card t="Esta semana" c="#FFD166">
-          <p>Daily corta por equipo + <b>una sincronización entre equipos</b> para la integración.</p>
-          <p>Sprint Review conjunta: el ensayo de la demo.</p>
-          <p className="fragment">Retrospectiva general después del 30: ¿qué repetirían en su próximo proyecto?</p>
-        </Card>
-      </Dos>
     </>,
     <YCapstone key="y" tema="t1" items={[
-      ['…el viernes descubren que pedidos y pagos no se entienden?', 'Si integraban desde el lunes, lo habrían visto con días de margen. Integrar temprano y seguido.'],
-      ['…a una historia Must le faltan pruebas el jueves?', 'Se prioriza sobre cualquier Could. Si no se termina, se cuenta honestamente en la demo.'],
-      ['…el PO quiere agregar algo nuevo el miércoles?', 'Se responde con el triángulo: entra algo nuevo solo si sale otra cosa del mismo tamaño.'],
-    ]} cierre="gestionar la recta final es decidir qué NO entra, a tiempo y en voz alta." />,
+      ['…el contrato de otro equipo no llega a main antes del 30/11?', 'La demo corre con el fallback de core y se explica qué falta y por qué.'],
+      ['…en el ensayo del 27/11 aparece un error?', 'Issue con la plantilla Bug, rama ISSUE-<n>/bug/… y MR a main: después del congelamiento solo entran correcciones.'],
+      ['…el PO pregunta por una decisión de diseño?', 'Responde quien la tomó: el patrón, el contrato o la regla, con su porqué.'],
+    ]} tarea="página Demo del módulo completa, diapositivas en Canvas, datos de prueba listos, ensayo del 27/11 con -Pjpa y su grabación como plan B." />,
   ] },
 
-  { id: 'a1', titulo: 'Actividad 1', kind: 'act', slides: [
-    <Actividad key="a" id="a1" como="Qué se ajusta cuando la fecha es fija, MoSCoW, velocidad y cómo leer un burndown." />,
-    ...preguntas('a1'),
-  ] },
-
-  /* ───────────── TEMA 2 · VERSIONADO ───────────── */
-  { id: 't2', tema: 't2', slides: [
-    <Portada key="p" tema="t2" pregunta="Todos los módulos dicen 0.0.1-SNAPSHOT. ¿Qué versión le van a entregar al cliente el 30?" />,
+  /* ───────────── TEMA 2 · LA VERSIÓN 1.0.0 (LAB 9 · ACTIVIDAD 2) ───────────── */
+  { id: 't2', tema: 't2', titulo: 'Versiones', slides: [
+    <Portada key="p" tema="t2" pregunta="El PO dice «en la demo no funcionaba». ¿Qué versión estaba corriendo?" />,
     <>
-      <T tema="t2" eti="¿Qué es una versión?">Un nombre para un estado exacto del código</T>
-      <Dos r="1fr 1fr">
-        <Analogia titulo="Las ediciones de un libro">
-          <p>Si alguien dice «en la página 40 de la 2.ª edición», todos encuentran lo mismo. Si dice «en el libro», nadie sabe cuál.</p>
-          <p>Una versión hace eso con el software: <b>v1.0.0</b> apunta a un commit exacto que cualquiera puede descargar y ejecutar.</p>
-        </Analogia>
+      <T tema="t2" eti="El problema">Sin número de versión, nadie sabe qué está corriendo</T>
+      <Cards cols={3}>
+        <Card t="¿Qué se probó?" c="#FF6B8B">«La de la rama de Juan del martes» no se puede reproducir.</Card>
+        <Card t="¿Qué cambió?" c="#FFD166" frag>Entre dos entregas sin número, nadie sabe qué se agregó o qué se rompió.</Card>
+        <Card t="¿Se puede actualizar?" c="#6EA8FF" frag>Un módulo que depende de otro necesita saber si la versión nueva es compatible.</Card>
+      </Cards>
+    </>,
+    <>
+      <T tema="t2" eti="Definición">Semantic Versioning (SemVer 2.0.0)</T>
+      <SemverAnatomia />
+      <p className="d-sub fragment"><b>0.y.z</b> es desarrollo inicial: todo puede cambiar. <b>1.0.0</b> define la primera versión pública y estable: desde ahí, romper un contrato sube el MAJOR.</p>
+    </>,
+    <>
+      <T tema="t2" eti="Reglas">Cómo sube cada número</T>
+      <Tabla head={['Cambio', 'Ejemplo en el capstone', 'De 1.4.2 pasa a']} rows={[
+        ['Se corrige un error sin cambiar contratos', 'La barra de la lista de usuarios se cortaba (#102)', '1.4.3'],
+        ['Se agrega algo compatible', 'CatalogService.findAvailableProducts() con default (#115)', '1.5.0'],
+        ['Se rompe un contrato', 'Quitar FallbackCatalogService.AVAILABLE_PRODUCT (#145)', '2.0.0'],
+        ['Versión candidata antes de publicar', 'Lo que se ensaya el 27/11', '2.0.0-rc.1'],
+      ]} />
+      <p className="d-sub fragment">Al subir un número, los de la derecha vuelven a 0: 1.4.2 → 1.5.0, nunca 1.5.2. Antes de 1.0.0 (como #145) un cambio así sube el MINOR.</p>
+    </>,
+    <>
+      <T tema="t2" eti="Diagrama">Los tags del capstone</T>
+      <TagLinea />
+      <p className="d-sub fragment">Un tag por cierre de sprint, en el último commit de <M>main</M> antes de las 23:59 (UTC-4). Lo crea el practitioner; <b>v1.0.0</b> se crea el 30/11 sobre el commit ensayado.</p>
+    </>,
+    <>
+      <T tema="t2" eti="GitHub Flow">La versión sin rama release permanente</T>
+      <Dos r="1.2fr 1fr">
+        <Code small lang="bash" titulo="del congelamiento a v1.0.0">{`
+main ──●── congelamiento (acuerdo de SM, hasta el 25/11)
+       ├── MR del practitioner: todos los pom.xml a 1.0.0
+       ├── FEAT-<n>/release/<módulo>-1.0.0  → MR → main
+       ├── ISSUE-<n>/bug/<descripción>      → MR → main
+       ●── ensayo del 27/11
+       ●── tag v1.0.0 (30/11) → Release en GitLab`}</Code>
         <Lista frag items={[
-          <>Permite <b>reproducir</b>: «la demo usó v1.0.0» = ese commit, ese código.</>,
-          <>Permite <b>comunicar</b>: el número dice si el cambio rompe algo o no.</>,
-          <>Permite <b>regresar</b>: si v1.1.0 falla, se vuelve a v1.0.0.</>,
+          <><M>main</M> es la única rama permanente; todo entra con un MR.</>,
+          <><b>Congelamiento</b>: desde el acuerdo de SM solo entran correcciones y ramas de versión. Ninguna historia nueva.</>,
+          <>El tag va sobre el <b>mismo commit</b> que se ensayó: lo que se prueba es lo que se demuestra.</>,
         ]} />
       </Dos>
     </>,
     <>
-      <T tema="t2" eti="Versionado semántico">MAJOR . MINOR . PATCH</T>
-      <div className="d-semver mono"><span className="M">1</span>.<span className="m">4</span>.<span className="p">2</span></div>
-      <Cards cols={3}>
-        <Card t="MAJOR: rompe" c="#FF6B8B">Cambias algo que otros ya usan y tienen que cambiar su código. En el capstone: la firma de un <b>contrato de core</b>.</Card>
-        <Card t="MINOR: agrega" c="#C6F33A">Agregas una función compatible. Quien no la usa no se entera. Al subir MINOR, PATCH vuelve a 0.</Card>
-        <Card t="PATCH: corrige" c="#6EA8FF">Solo arreglas un error, sin cambiar cómo se usa.</Card>
-      </Cards>
-      <p className="d-capstone"><b>0.y.z</b> = todo puede cambiar. <b>1.0.0</b> = «esta es nuestra API pública y la vamos a respetar». La demo es el momento de la 1.0.0.</p>
+      <T tema="t2" eti="Maven">La versión dentro del pom.xml</T>
+      <Dos>
+        <Code small lang="xml" titulo="order-module/pom.xml y delivery-system/pom.xml">{`
+<!-- módulo: su versión y la de core -->
+<version>1.0.0</version>
+<core-module.version>1.0.0</core-module.version>
+
+<!-- delivery-system: la versión exacta de cada módulo -->
+<order-module.version>1.0.0</order-module.version>`}</Code>
+        <div className="d-def">
+          <p><b>SNAPSHOT</b> significa «en desarrollo»: Maven la puede reemplazar en cada build. Una versión <b>sin SNAPSHOT</b> es fija: el mismo número siempre es el mismo jar.</p>
+          <p className="fragment"><M>assemble-system</M> pide la <b>versión exacta</b> de cada módulo. Si un módulo sube y <M>delivery-system</M> no, el build de <M>main</M> falla.</p>
+          <p className="fragment">Por eso <b>todos los pom.xml los cambia el practitioner</b> en un solo MR el día del congelamiento. <M>user-module</M> y <M>delivery-system</M> ya están en 1.0.0 (!118).</p>
+        </div>
+      </Dos>
     </>,
     <>
-      <T tema="t2" eti="Explicador (Archify)">Qué número le toca a cada cambio y cómo se publica</T>
-      <Arch src="versiones" h={640} nota="Tabla con ejemplos del capstone y el flujo de SNAPSHOT a release" />
-    </>,
-    <>
-      <T tema="t2" eti="Simulador · máquina de versiones" sub="Seis cambios reales del Delivery System. Elige cuánto sube la versión; si aciertas, se crea el tag y la línea del CHANGELOG.">¿MAJOR, MINOR o PATCH?</T>
-      <Versionador />
-    </>,
-    <>
-      <T tema="t2" eti="SNAPSHOT, pre-release y tags">Las etiquetas que van a usar esta semana</T>
-      <Tabla head={['Etiqueta', 'Significa', 'Cuándo']} rows={[
-        ['0.0.1-SNAPSHOT', 'En construcción (Maven): puede cambiar en cualquier momento', 'Hoy, mientras desarrollan'],
-        ['1.0.0-rc.1', 'Candidato: la versión que se ensaya', 'Al congelar el alcance'],
-        ['1.0.0', 'Versión final estable', 'La que se muestra el 30'],
-        ['1.0.1', 'Corrección después de publicar', 'Si aparece un error en el ensayo'],
+      <T tema="t2" eti="Pipeline">El pipeline verifica y publica la versión</T>
+      <Tabla head={['Job', 'Cuándo corre', 'Qué hace']} rows={[
+        [<M>check-release-versions</M>, <>En <M>main</M> y en las ramas <M>…/release/…</M></>, 'Lista los pom.xml que no están en 1.0.0 o dependen de un SNAPSHOT. Solo avisa: no bloquea.'],
+        [<M>check-release-versions</M>, <>Con el tag <M>v1.0.0</M></>, 'Bloquea: si falta un módulo, no hay Release.'],
+        [<M>lint-&lt;módulo&gt;</M>, 'En cada MR y en main', 'Desde el 23/11 es bloqueante: 0 infracciones.'],
+        [<M>release-system</M>, <>Con un tag desde <M>v1.0.0</M></>, 'Publica el Release en GitLab con delivery-system.jar y los jars de los módulos.'],
       ]} />
     </>,
     <>
-      <T tema="t2" eti="En la terminal y en GitLab">Del pom.xml al release</T>
-      <Dos r="1.25fr 1fr">
-        <Code lang="bash" titulo="Publicar v1.0.0">{`
-# 1. En una rama y por MR, en cada módulo:
-./mvnw versions:set -DnewVersion=1.0.0 -DgenerateBackupPoms=false
-
-# 2. Ya fusionado y con pipeline verde en main:
-git switch main && git pull --rebase origin main
-git tag -a v1.0.0 -m "Delivery System 1.0.0 · demo final"
-git push origin v1.0.0
-
-# 3. GitLab: Deploy > Releases > New release
-#    Tag v1.0.0 · notas copiadas del CHANGELOG`}</Code>
-        <Lista items={[
-          <>El cambio de versión <b>también va por MR</b>, como todo en GitHub Flow.</>,
-          <>Tag <b>anotado</b> (-a): guarda autor, fecha y mensaje.</>,
-          <>El <b>release</b> de GitLab agrega notas y enlaces al tag.</>,
-          <>Un tag no se mueve: si hay que corregir, es <b>v1.0.1</b>.</>,
-        ]} />
-      </Dos>
-    </>,
-    <>
-      <T tema="t2" eti="CHANGELOG">Las notas que alguien sí va a leer</T>
-      <Dos r="1.2fr 1fr">
-        <Code lang="markdown" titulo="CHANGELOG.md">{`
-# Changelog
-
-## [1.0.0] - 2026-11-29
-### Added
-- [ORD] Crear pedido con dirección y costo de envío.
-- [PAY] Pago simulado con el último método registrado (D-04).
-- [DEL] Confirmar entrega con código de 4 caracteres (D-02).
-### Fixed
-- [CAT] El stock se libera al cancelar un pedido (D-09).
-
-## [Unreleased]
-- [PAY] Cupones y promociones (D-03).`}</Code>
-        <Lista items={[
-          <>Formato <b>Keep a Changelog</b>: Added, Changed, Fixed, Removed.</>,
-          <>Escrito para personas: qué cambió para el usuario, no la lista de commits.</>,
-          <>Sale fácil de sus títulos de historia <span className="mono">[MÓDULO] Verbo + qué</span>.</>,
-          <><b>Unreleased</b>: lo que viene. Honesto y útil para «qué sigue» en la demo.</>,
-        ]} />
-      </Dos>
+      <T tema="t2" eti="Laboratorio 9 · Actividad 2">Lo que hace cada equipo para su versión</T>
+      <Lista frag items={[
+        <>Issue «Release 1.0.0 de <M>&lt;módulo&gt;</M>» con la plantilla Historia: epic, hito de Integración, persona asignada y Weight.</>,
+        <>Después del MR del practitioner: <M>git pull --rebase origin main</M> y rama <M>FEAT-&lt;n&gt;/release/&lt;módulo&gt;-1.0.0</M>.</>,
+        <>Dejar listo el <b>pipeline del módulo</b>: <M>lint</M> en verde, cobertura ≥ 80 % en dominio y aplicación y el jar <M>&lt;módulo&gt;-1.0.0.jar</M>. Y el <b>README</b> del módulo.</>,
+        <>MR hacia <M>main</M> con la plantilla Release, aprobado por el SM, con <M>Closes #n</M>.</>,
+        <>Probar el artefacto: el jar de <M>assemble-system</M> con MySQL y la base vacía.</>,
+        <>Notas de la versión en <M>Modulos/&lt;módulo&gt;/Release-1.0.0</M>: historias, errores corregidos, cobertura, contratos y cómo ejecutar.</>,
+      ]} />
     </>,
     <YCapstone key="y" tema="t2" items={[
-      ['…el equipo de pagos encuentra un error el 29 por la noche?', 'MR con la corrección, pipeline verde y tag v1.0.1. La demo usa v1.0.1; v1.0.0 sigue existiendo.'],
-      ['…cada módulo quiere su propia versión?', 'Para la demo, una sola versión del producto (todo en 1.0.0) es más simple de explicar y de reproducir.'],
-      ['…alguien cambia la firma de UserService después de la 1.0.0?', 'Eso sería 2.0.0 y obliga a los otros cuatro equipos a cambiar. Por eso los contratos se cuidan.'],
-    ]} cierre="la versión es una promesa: este número, este código, siempre." />,
+      ['…tu equipo cambia el pom.xml por su cuenta?', 'Se rompe assemble-system en main y se bloquea a todos: los pom.xml los cambia el practitioner.'],
+      ['…se descubre un error en la demo después de crear v1.0.0?', 'Se corrige con un Bug y se publica v1.0.1. El tag v1.0.0 no se toca.'],
+      ['…quieres probar exactamente lo que se mostró el 30/11?', 'git switch --detach v1.0.0 y construir desde ahí.'],
+    ]} tarea="issue y rama de versión del módulo después del congelamiento, pipeline en verde con el jar 1.0.0 y la página Release-1.0.0 completa antes del 29/11." />,
   ] },
 
-  { id: 'a2', titulo: 'Actividad 2', kind: 'act', slides: [
-    <Actividad key="a" id="a2" como="MAJOR, MINOR o PATCH con cambios del capstone, SNAPSHOT y los pasos para publicar v1.0.0." />,
-    ...preguntas('a2'),
-  ] },
+  { ...ACT.a2, slides: [...ACT.a2.slides, <Receso key="r" />] },
 
-  { id: 'receso', titulo: 'Receso', kind: 'act', slides: [<Receso key="r" />] },
-
-  /* ───────────── TEMA 3 · ENTREGABLES ───────────── */
-  { id: 't3', tema: 't3', slides: [
-    <Portada key="p" tema="t3" pregunta="El 30 no solo se muestra una demo. ¿Qué más se entrega, y cómo sabemos que está completo?" />,
+  /* ───────────── TEMA 3 · GESTIÓN DE LA SEMANA DE INTEGRACIÓN ───────────── */
+  { id: 't3', tema: 't3', titulo: 'Gestión', slides: [
+    <Portada key="p" tema="t3" pregunta="Quedan siete días y cuatro equipos dependen unos de otros: ¿quién decide qué entra a main?" />,
     <>
-      <T tema="t3" eti="Seis grupos (Archify)">Qué se entrega el 30 de noviembre</T>
-      <Arch src="entregables" h={600} nota="Producto, código, documentación, proceso, demo e individual" />
+      <T tema="t3" eti="Definición">¿Qué es gestionar un proyecto de software?</T>
+      <Dos r="1.2fr 1fr">
+        <div className="d-def">
+          <Cita fuente="PMI · PMBOK Guide, 7.ª ed. (2021)">Un proyecto es un esfuerzo temporal que se lleva a cabo para crear un producto, servicio o resultado único.</Cita>
+          <p><b>Gestionarlo</b> es decidir qué se hace, en qué orden, con qué riesgos y cómo se sabe si va bien. En la última semana, la decisión más importante es <b>qué ya no entra</b>.</p>
+        </div>
+        <Cards cols={1}>
+          <Card t="Durante los sprints" c="#9298AA">Se agregan historias y se ajusta el alcance cada sprint.</Card>
+          <Card t="Antes de la entrega" c="#6EA8FF" frag>Se estabiliza: se prueba, se corrige y se publica la versión.</Card>
+        </Cards>
+      </Dos>
     </>,
     <>
-      <T tema="t3" eti="Cada grupo">Qué es y cómo se ve terminado</T>
-      <Tabla small head={['Entregable', 'Se ve terminado cuando…']} rows={[
-        ['Producto', 'Hay un tag v1.0.0 y un release en GitLab; se ejecuta con ./mvnw javafx:run -Pmemory'],
-        ['Código', 'Todo está en main por MR revisado, con pipeline en verde y pruebas de los casos de uso'],
-        ['Documentación', 'README con cómo ejecutar y probar; wiki del módulo: 4Ps, plan de acción, casos de uso y decisiones'],
-        ['Proceso', 'Issues cerrados con DoD marcada, milestones por sprint, actas de review y retrospectiva'],
-        ['Demo', 'Guion de 10 minutos ensayado y un video de respaldo'],
-        ['Individual', 'Sus commits, MRs y revisiones muestran su parte'],
-      ]} />
-      <p className="d-capstone">Esta es una lista de trabajo para el equipo. <b>La rúbrica oficial del curso manda</b>: compárenla con ella.</p>
+      <T tema="t3" eti="Diagrama">La triple restricción</T>
+      <Triangulo />
     </>,
     <>
-      <T tema="t3" eti="La prueba del recién llegado">¿Alguien que no es del equipo lo puede ejecutar?</T>
+      <T tema="t3" eti="Definición">El congelamiento (code freeze)</T>
       <Dos r="1.1fr 1fr">
-        <Code lang="markdown" small titulo="README.md · lo mínimo">{`
-## Requisitos
-- JDK 25 (java y javac), Git
-
-## Ejecutar la versión de la demo
-git clone <repo> && cd capstone
-git switch --detach v1.0.0
-# compilar los módulos en orden (ver README)
-cd delivery-system
-./mvnw javafx:run -Pmemory
-
-## Usuarios de prueba
-- 5 usuarios: 00000000-0000-0000-0000-00000000000N
-  (roles en SampleUsers de core-module)
-
-## Recorrido sugerido
-1. Entrar como cliente y crear un pedido…`}</Code>
-        <Lista frag items={[
-          <>Den el README a alguien de <b>otro equipo</b>.</>,
-          <>Que descargue el <b>tag</b> en una máquina limpia y lo ejecute <b>sin preguntarles nada</b>.</>,
-          <>Cada pregunta que haga = algo que falta en el README.</>,
-          <>«En mi máquina funciona» no es un entregable.</>,
+        <div className="d-def">
+          <p>Es el momento en que el equipo deja de agregar funcionalidad y solo <b>estabiliza</b>: desde ahí entran correcciones y los cambios de la versión.</p>
+          <p className="fragment">En el capstone lo acuerdan los <b>4 SM</b> en su reunión (acta con grabación e issue de Acuerdo), <b>antes del 25/11</b>.</p>
+          <p className="fragment">Sirve para que el código que se ensaya el 27/11 sea el mismo que se demuestra el 30/11.</p>
+        </div>
+        <Tabla small head={['Después del congelamiento', '¿Entra?']} rows={[
+          ['Una corrección (ISSUE-<n>/bug/…)', 'Sí'],
+          ['La rama de versión del módulo', 'Sí'],
+          ['El MR del practitioner con los pom.xml', 'Sí'],
+          ['Una historia nueva', 'No'],
+          ['Un commit directo en main', 'Nunca'],
         ]} />
       </Dos>
     </>,
     <>
-      <T tema="t3" eti="Semáforo de entrega" sub="La lista del equipo. Las ★ bloquean la entrega. Se guarda solo en este navegador: úsenla en su celular.">¿Están listos para entregar?</T>
-      <Semaforo />
+      <T tema="t3" eti="Cómo nos organizamos">Scrum con LeSS en la semana de integración</T>
+      <Tabla head={['Pieza', 'En el capstone']} rows={[
+        ['Hito', 'Integración, pruebas y demo: solo lo que se termina; lo demás vuelve al backlog'],
+        ['Planning', 'Objetivo SMART de la semana en la epic del equipo'],
+        ['Coordinación entre equipos', 'Reunión de SM con acta y un issue de Acuerdo por cada decisión'],
+        ['Errores', 'Un issue con la plantilla Bug y una rama ISSUE-<n>/bug/…'],
+        ['Registro', 'Actas en Actas/Integracion y avance en Seguimiento/Integracion'],
+      ]} />
     </>,
     <>
-      <T tema="t3" eti="Hecho vs. entregado">Definition of Done de la historia y del producto</T>
-      <Dos r="1fr 1fr">
-        <Card t="DoD de una historia" c="#6EA8FF"><p>Criterios Dado/Cuando/Entonces cumplidos, pruebas, MR revisado y aprobado por el Scrum Master, pipeline verde, issue cerrado.</p></Card>
-        <Card t="DoD del producto (release)" c="#B78CFF"><p>Todas las Must hechas, <b>integradas entre módulos</b>, versión sin SNAPSHOT, tag y release, README probado por alguien de fuera, demo ensayada.</p></Card>
-      </Dos>
-      <p className="d-capstone">Cinco historias «hechas» por separado no son un producto si no funcionan <b>juntas</b>.</p>
-    </>,
-    <YCapstone key="y" tema="t3" items={[
-      ['…el README dice «correr con MySQL» y en el salón no hay Docker?', 'Documenten el perfil de memoria como camino principal y MySQL como opcional.'],
-      ['…la wiki del módulo no se actualiza desde el Sprint 2?', 'Es un documento vivo: actualicen casos de uso, decisiones y actas antes del 30.'],
-      ['…una historia está hecha pero no se usa en la demo?', 'Sigue siendo entregable: va en el CHANGELOG y en el release, aunque no se muestre.'],
-    ]} cierre="un entregable está completo cuando otra persona puede usarlo sin ustedes." />,
-  ] },
-
-  { id: 'a3', titulo: 'Actividad 3', kind: 'act', slides: [
-    <Actividad key="a" id="a3" como="Los grupos de entregables, la prueba del recién llegado y la Definition of Done." />,
-    ...preguntas('a3'),
-  ] },
-
-  /* ───────────── TEMA 4 · DEMO ───────────── */
-  { id: 't4', tema: 't4', slides: [
-    <Portada key="p" tema="t4" pregunta="¿Qué tienen en común una buena demo y una buena película? Una historia… y un plan por si algo falla." />,
-    <>
-      <T tema="t4" eti="Qué es (y qué no es)">Una demo muestra valor, no pantallas</T>
-      <Dos r="1fr 1fr">
-        <Card t="Sí es" c="#C6F33A"><Lista items={[
-          <>Mostrar que el producto <b>resuelve el problema</b> de alguien.</>,
-          <>Un recorrido <b>real</b>, de punta a punta, en la versión entregada.</>,
-          <>Honestidad: qué funciona y qué quedó fuera.</>,
-        ]} /></Card>
-        <Card t="No es" c="#FF6B8B"><Lista items={[
-          <>Un recorrido por el código línea por línea.</>,
-          <>Abrir cada pantalla «para que vean que existe».</>,
-          <>Mostrar algo que no está en main ni en v1.0.0.</>,
-        ]} /></Card>
+      <T tema="t3" eti="Métricas">MR fusionados en main por sprint</T>
+      <Dos r="1.1fr 1fr">
+        <BarrasSprint />
+        <div className="d-def">
+          <p>Contado con <M>git rev-list --merges</M> entre los tags.</p>
+          <p className="fragment"><b>Sprint 2</b> concentró el trabajo: se cerraron los contratos y muchas historias del Sprint 1.</p>
+          <p className="fragment">En la integración la métrica cambia: <b>errores abiertos y cerrados</b>, pipelines de los módulos en <M>main</M> y contratos conectados.</p>
+        </div>
       </Dos>
     </>,
     <>
-      <T tema="t4" eti="Dos historias famosas">Lo que enseñan las demos de las grandes empresas</T>
+      <T tema="t3" eti="Diagrama">Riesgos de esta semana</T>
+      <Dos r="1.25fr 1fr">
+        <MatrizRiesgo />
+        <Lista frag items={[
+          <><b>Evitar</b>: contratos con <i>fallback</i> en core, para que nadie quede bloqueado.</>,
+          <><b>Reducir</b>: rebase y MR pequeños; el pipeline del MR en verde antes de fusionar.</>,
+          <><b>Repartir</b>: cada integrante responde por una parte de la demo.</>,
+          <><b>Vigilar</b>: el ensayo del 27/11 con MySQL, no el día de la demo.</>,
+        ]} />
+      </Dos>
+    </>,
+    <>
+      <T tema="t3" eti="Lecciones">Lo que nos enseñó el capstone</T>
       <Cards cols={2}>
-        <Card t="iPhone, 2007: el «camino dorado»" c="#C6F33A"><p>El prototipo fallaba si se usaba en otro orden. El equipo ensayó una secuencia exacta de pasos que sí funcionaba, y la demo salió perfecta.</p><p><b>Lección:</b> guion preciso y ensayado.</p></Card>
-        <Card t="Cybertruck, 2019: la ventana" c="#FF6B8B"><p>En la presentación lanzaron una bola de metal para mostrar la ventana «blindada»… y se estrelló. Se volvió viral.</p><p><b>Lección:</b> ensayar en las condiciones reales y tener un plan B.</p></Card>
+        <Card t="Lo que funcionó" c="#C6F33A">Contratos en core con fallback, el pipeline en cada MR, TDD con commits separados, la revisión de código entre compañeros.</Card>
+        <Card t="Lo que costó" c="#FF6B8B" frag>Historias cerradas sin MR fusionado, hitos desordenados, actas sin grabación, objetivos SMART sin publicar, la reunión de SM.</Card>
+        <Card t="Lo que cambia el resultado" c="#6EA8FF" frag>Historias pequeñas, integrar todos los días y que cada uno documente lo suyo el mismo día.</Card>
+        <Card t="La regla de oro" c="#FFD166" frag>Si no está en GitLab o en la wiki, para el proyecto no pasó.</Card>
       </Cards>
     </>,
+    <YCapstone key="y" tema="t3" items={[
+      ['…los SM no acuerdan el congelamiento antes del 25/11?', 'Nadie puede subir la versión: no hay rama de versión ni Release. El acuerdo es la primera tarea de la semana.'],
+      ['…un contrato no llega a main?', 'Se activa el plan: fallback, aviso en la reunión de SM y un issue para cerrarlo antes del ensayo.'],
+      ['…una historia no se termina el 29/11?', 'Vuelve al backlog con el motivo y se dice en la demo. No se cierra sin MR.'],
+    ]} tarea="acta de la reunión de SM con el congelamiento, objetivo SMART de la semana en la epic y Seguimiento/Integracion al día." />,
+  ] },
+
+  ACT.a3,
+
+  /* ───────────── TEMA 4 · LA EVALUACIÓN FINAL ───────────── */
+  { id: 't4', tema: 't4', titulo: 'Evaluación', slides: [
+    <Portada key="p" tema="t4" pregunta="Si te piden cambiar una regla de negocio en vivo, ¿sabes en qué capa va?" />,
     <>
-      <T tema="t4" eti="Explicador (Archify)">El recorrido que muestra los cinco módulos juntos</T>
-      <Arch src="recorrido-demo" h={640} nota="Un pedido de punta a punta, tiempos sugeridos y preparación" />
+      <T tema="t4" eti="E.10 · Cronograma">Tres días de evaluación</T>
+      <Tabla head={['Día', 'Qué se evalúa', 'Cómo']} rows={[
+        ['Lunes 30/11 · 2 h', 'Demo del producto (equipo)', '15 min por equipo desde main con MySQL, y 5 min de preguntas: cada integrante responde al menos una de arquitectura'],
+        ['Martes 1/12 · 2 h', 'Revisión técnica (individual)', 'Unos 8 min por estudiante en su máquina: su aporte, un cambio pequeño en vivo y las integraciones de su módulo'],
+        ['Miércoles 2/12', 'Sesión conjunta', 'El producto integrado ante dos secciones; otro practitioner pregunta y sus observaciones se suman a la evaluación'],
+      ]} />
+      <p className="d-sub fragment">Requisito: el <b>75 %</b> de los labs 1 a 9 y del midterm. Quien no lo alcance y haya demostrado avance real en su trabajo individual puede presentar su desarrollo.</p>
     </>,
     <>
-      <T tema="t4" eti="El guion">Diez minutos, cinco partes</T>
-      <ol className="d-pasos">
-        <li><b>Problema y usuario (1 min):</b> «María quiere pedir comida a un comercio de su colonia…».</li>
-        <li className="fragment"><b>Recorrido feliz (4–5 min):</b> entra, elige, paga, el comercio marca listo, el repartidor entrega con el código.</li>
-        <li className="fragment"><b>Una regla de negocio (1–2 min):</b> intentar cancelar un pedido ya en camino → el sistema no lo permite (D-06).</li>
-        <li className="fragment"><b>Cómo está hecho (1–2 min):</b> monolito modular, contratos en core, un diagrama, no el código.</li>
-        <li className="fragment"><b>Qué sigue y preguntas (1 min):</b> lo del Unreleased, con honestidad.</li>
-      </ol>
+      <T tema="t4" eti="E.10 · Rúbrica">Cómo se reparten los 100 puntos</T>
+      <Tabla head={['Actividad', 'Criterio', 'Pts']} rows={[
+        ['1 · Demo (equipo)', 'Demo funcional desde main', '15'],
+        ['', 'Cobertura de lo desarrollado', '10'],
+        ['', 'Presentación y tiempo', '15'],
+        ['2 · Revisión técnica (individual)', 'Teoría y arquitectura', '15'],
+        ['', 'Defensa de su aporte', '15'],
+        ['', 'Implementación en vivo', '20'],
+        ['', 'Integraciones', '10'],
+      ]} small />
+      <p className="d-sub fragment">Niveles: Muy bueno (completo) · Aceptable (≈ 2/3) · Necesita mejorar (≈ 1/3) · No se presentó (0).</p>
     </>,
     <>
-      <T tema="t4" eti="Roles y preparación">Quién hace qué el día de la demo</T>
-      <Dos r="1fr 1fr">
-        <Cards cols={2}>
-          <Card t="Narrador" c="#FF8A3D">Cuenta la historia y mira al público, no a la pantalla.</Card>
-          <Card t="Operador" c="#6EA8FF">Maneja el teclado siguiendo el guion exacto.</Card>
-          <Card t="Plan B" c="#B78CFF">Tiene listo el video y los datos de respaldo.</Card>
-          <Card t="Tiempo" c="#C6F33A">Avisa a los 5 y a los 8 minutos.</Card>
-        </Cards>
-        <Lista items={[
-          <><b>Datos listos:</b> usuarios de prueba (SampleUsers), comercios y productos cargados.</>,
-          <><b>Arranque en limpio</b> desde el tag v1.0.0, esa misma mañana.</>,
-          <><b>Pantalla:</b> zoom al 125 %, notificaciones apagadas, ventanas cerradas.</>,
-          <><b>Ensayo:</b> dos veces con cronómetro, en la máquina de la demo.</>,
+      <T tema="t4" eti="Teoría">Arquitectura limpia y hexagonal</T>
+      <Dos r="1fr 1.1fr">
+        <div className="d-def">
+          <Cita fuente="Robert C. Martin · Clean Architecture (2017)">Las dependencias del código fuente solo pueden apuntar hacia adentro. Nada en un círculo interno puede saber algo de un círculo externo.</Cita>
+          <p className="fragment"><b>Hexagonal</b> (Cockburn, 2005): la aplicación habla con el mundo por <b>puertos</b> (interfaces) y el mundo se conecta con <b>adaptadores</b> (UI, base de datos, otros módulos).</p>
+        </div>
+        <Tabla small head={['Capa', 'Qué contiene', 'En el capstone']} rows={[
+          ['Entidad', 'Datos y reglas de negocio', 'Product.disable(), Order.getDeliveryCode()'],
+          ['Caso de uso', 'Un flujo de la aplicación', 'AddProductToCartUseCase, CancelOrderUseCase'],
+          ['Puerto', 'Interfaz que el caso de uso necesita u ofrece', 'CartRepositoryPort · CatalogService (contrato de core)'],
+          ['Adaptador', 'Implementación técnica del puerto', 'InMemory… · OrderPersistenceAdapter (JPA) · controladores JavaFX'],
         ]} />
       </Dos>
     </>,
     <>
-      <T tema="t4" eti="Simulador · ensaya tu demo" sub="Arma el guion tocando bloques (máximo 10 min), mira la atención del público y enfrenta imprevistos según lo que prepararon.">¿Su demo sobrevive?</T>
-      <EnsayoDemo />
+      <T tema="t4" eti="Teoría">Puertos y adaptadores entre módulos</T>
+      <Dos r="1.2fr 1fr">
+        <Code small lang="java" titulo="core-module y catalog-module">{`
+// core-module: el contrato (puerto) que consumen los demás
+public interface CatalogService {
+    Optional<ProductInfo> findProduct(UUID productId);
+    default List<ProductInfo> findAvailableProducts() { return List.of(); }
+}
+
+// core-module: respaldo si catalog-module no está
+public class FallbackCatalogService implements CatalogService { ... }
+
+// catalog-module: el adaptador real
+public class CatalogServiceAdapter implements CatalogService { ... }`}</Code>
+        <Lista frag items={[
+          <>Order depende del <b>contrato</b>, nunca de <M>catalog-module</M>.</>,
+          <>Sin el módulo real, arranca el <b>fallback</b>: la app no se cae.</>,
+          <>En persistencia pasa lo mismo: adaptador en memoria o JPA; <M>MissingJpaAdaptersAutoConfiguration</M> cubre los que faltan.</>,
+        ]} />
+      </Dos>
     </>,
     <>
-      <T tema="t4" eti="Cuando algo falla en vivo">Plan B y preguntas difíciles</T>
-      <Tabla small head={['Si pasa…', 'Hacen…']} rows={[
-        ['La aplicación no arranca', 'Video de respaldo y siguen narrando sin pedir perdón diez veces'],
-        ['Sale un error en un paso', '«Esto lo vimos en el ensayo; así se ve cuando funciona» y pasan al video de ese paso'],
-        ['Preguntan algo que no saben', '«Buena pregunta, no lo sé; lo revisamos y les respondemos»'],
-        ['Preguntan por algo que no entró', 'Lo explican con el triángulo: qué priorizaron y por qué'],
-        ['Se acaba el tiempo', 'Saltan a «qué sigue»: mejor terminar a tiempo que completo'],
+      <T tema="t4" eti="Implementación en vivo">Cómo resolver un cambio pequeño en 8 minutos</T>
+      <Dos r="1fr 1.1fr">
+        <Lista frag items={[
+          <><b>Ubica la capa</b>: ¿es una regla (entidad), un flujo (caso de uso), un dato que falta (puerto y adaptador) o un contrato (integración)?</>,
+          <><b>Rama</b>: <M>FEAT-&lt;n&gt;/…</M> desde <M>main</M> actualizado.</>,
+          <><b>Prueba primero</b>: escríbela y mírala fallar (rojo).</>,
+          <><b>El código mínimo</b> para que pase (verde) y, si hace falta, refactor.</>,
+          <><b>Commit</b> <M>FEAT-&lt;n&gt;: …</M> y explica qué hiciste y por qué en esa capa.</>,
+        ]} />
+        <Code small lang="java" titulo="ejemplo · regla en la entidad">{`
+@Test
+void cannotCancelADeliveredOrder() {
+    Order order = deliveredOrder();
+    assertThrows(DomainException.class,
+        () -> order.cancel("ya no lo quiero"));
+}
+
+// Order.java
+public void cancel(String reason) {
+    if (status == OrderStatus.DELIVERED) {
+        throw new DomainException("A delivered order cannot be cancelled");
+    }
+    ...
+}`}</Code>
+      </Dos>
+    </>,
+    <>
+      <T tema="t4" eti="Preguntas de ejemplo">Lo que te pueden preguntar</T>
+      <Lista frag items={[
+        <>¿Por qué <M>CatalogService</M> está en <M>core-module</M> y <M>CatalogServiceAdapter</M> en <M>catalog-module</M>?</>,
+        <>¿Dónde va la regla «un comercio deshabilitado no se modifica»: en la entidad o en el caso de uso?</>,
+        <>¿Qué cambia entre el adaptador en memoria y el JPA? ¿Qué pruebas pasan con los dos?</>,
+        <>¿Por qué <M>TransactionRunner</M> es un puerto de core y no se usa <M>@Transactional</M> en el caso de uso?</>,
+        <>¿Qué contrato ofrece tu módulo, cuál consume y qué pasa si el otro módulo no está?</>,
+      ]} />
+      <p className="d-sub">Todas las preguntas y los ejemplos de ejercicios por equipo: <b>jcgi.lat/sd2_pendientes/evaluacion-final.html</b>.</p>
+    </>,
+    <>
+      <T tema="t4" eti="Diagrama">Qué se entrega y dónde</T>
+      <Entregables />
+    </>,
+    <>
+      <T tema="t4" eti="DoD del proyecto">El proyecto está terminado cuando…</T>
+      <Lista frag items={[
+        <>Los <b>requerimientos FUN e INT</b> del módulo tienen historia cerrada con su MR fusionado, o se explica por qué quedaron fuera.</>,
+        <>El <b>pipeline de main está en verde</b>: linter con 0 infracciones, pruebas y cobertura ≥ 80 % en dominio y aplicación.</>,
+        <><M>delivery-system</M> <b>arranca con MySQL</b> y todos los módulos, y el flujo de punta a punta funciona.</>,
+        <>La <b>wiki del módulo</b> está completa, incluidas Demo y Release-1.0.0.</>,
+        <>Existe el <b>tag v1.0.0</b> y su <b>Release</b> con las notas de la versión.</>,
       ]} />
     </>,
     <YCapstone key="y" tema="t4" items={[
-      ['…el módulo de un equipo no quedó completo?', 'El fallback de core (D-00) mantiene el recorrido; lo cuentan como «qué sigue», sin esconderlo.'],
-      ['…cada equipo quiere mostrar su módulo por separado?', 'Mejor un solo recorrido donde cada equipo narra su parte: así se ve que es un producto.'],
-      ['…el profesor pregunta «¿por qué hexagonal?»', 'Respuesta corta y con ejemplo: «pudimos cambiar memoria por MySQL sin tocar los casos de uso».'],
-    ]} cierre="una buena demo es una historia ensayada, con un plan B y la versión que entregaron." />,
+      ['…en la revisión técnica no sabes en qué capa va el cambio?', 'Pregúntate quién decide la regla: si es el negocio, va en la entidad; si es el orden de los pasos, en el caso de uso.'],
+      ['…te preguntan por código que no escribiste?', 'Explica cómo se integra con el tuyo: el contrato y el puerto. Del tuyo, cada línea.'],
+      ['…el ejercicio en vivo no compila?', 'Lee el error en voz alta y explica qué intentabas: también se evalúa cómo razonas.'],
+    ]} tarea="cada integrante repasa su código, sus MR y los contratos de su módulo, y practica un cambio pequeño con prueba primero." />,
   ] },
 
-  /* ───────────── ACTIVIDAD 4 + CIERRE ───────────── */
-  { id: 'a4', titulo: 'Actividad 4', kind: 'act', slides: [
-    <Actividad key="a" id="a4" como="El orden de una demo, qué hacer si falla y qué sí y qué no se muestra." />,
-    ...preguntas('a4'),
-  ] },
+  ACT.a4,
 
+  /* ───────────── CIERRE ───────────── */
   { id: 'cierre', titulo: 'Cierre', slides: [
     <>
-      <T eti="Explicador (Archify)">El plan de aquí al 30 de noviembre</T>
-      <Arch src="camino-entrega" h={600} nota="Integrar, congelar, candidato, ensayo y release" />
-    </>,
-    <>
-      <T eti="Cierre">Cuatro ideas para esta semana</T>
-      <div className="d-ocho cuatro">
-        {[['Recorten a tiempo', 'Fecha y equipo fijos: el alcance es lo que se ajusta.', '#FFD166'],
-          ['Una versión es una promesa', 'Sin SNAPSHOT, con tag v1.0.0 y release.', '#C6F33A'],
-          ['Entregable = otro lo puede usar', 'README probado por alguien de fuera.', '#B78CFF'],
-          ['La demo es una historia', 'Ensayada, de 10 minutos y con plan B.', '#FF8A3D']].map(([t, s, c]) => (
-          <div key={t} style={{ borderTopColor: c }}><span>{t}</span><p>{s}</p></div>
-        ))}
+      <T eti="Cierre">Cuatro ideas para llevarse</T>
+      <div className="d-ocho cinco">
+        {[
+          ['01', 'La demo muestra software funcionando desde main, con MySQL, un guion y un plan B.', '#FF8A3D'],
+          ['02', 'La versión 1.0.0 se prepara con GitHub Flow: congelamiento, MR pequeños y un tag sobre lo ensayado.', '#C6F33A'],
+          ['03', 'Antes de entregar se estabiliza: el alcance se congela, la calidad no se negocia.', '#6EA8FF'],
+          ['04', 'En la revisión cuenta lo que sabes explicar y cambiar de tu propio código.', '#B78CFF'],
+        ].map(([n, t, c]) => <div key={n} className="fragment" style={{ borderColor: c }}><span className="mono" style={{ color: c }}>{n}</span><p>{t}</p></div>)}
       </div>
-      <p className="d-capstone"><b>Tarea de hoy:</b> cada equipo llena el semáforo de entrega y decide su lista MoSCoW antes de mañana.</p>
     </>,
     <>
-      <T eti="Referencias">Para seguir aprendiendo</T>
-      <ul className="d-refs">
-        <li>Semantic Versioning 2.0.0 · semver.org/lang/es.</li>
-        <li>Keep a Changelog 1.1.0 · keepachangelog.com/es-ES.</li>
-        <li>GitLab Docs: Releases (Deploy → Releases) y Git: tags anotados (git-scm.com).</li>
-        <li>Maven: versiones SNAPSHOT y versions-maven-plugin (versions:set).</li>
-        <li>The Scrum Guide y Large-Scale Scrum (LeSS): Sprint Review con varios equipos.</li>
-        <li>Fred Brooks, «The Mythical Man-Month»: agregar gente tarde retrasa más.</li>
-        <li>Capstone Delivery System: requerimientos y decisiones D-00 a D-09 (guía de la sección).</li>
-      </ul>
-      <p className="d-sub">Repaso: actividades en #/actividades y simuladores en #/simuladores.</p>
+      <T eti="Referencias">Para seguir leyendo</T>
+      <Dos>
+        <Lista items={[
+          <>Wiki del capstone: <a href={`${WIKI}/Gu%C3%ADas/Laboratorio-semana-9`} target="_blank" rel="noreferrer">guía del Laboratorio semana 9</a>.</>,
+          <>Evaluación final: <a href="https://jcgi.lat/sd2_pendientes/evaluacion-final.html" target="_blank" rel="noreferrer">qué se evalúa, rúbrica y preguntas</a>.</>,
+          <>Entrega del Lab 9: <b>domingo 29/11</b>. Demo: <b>lunes 30/11</b>.</>,
+        ]} />
+        <ul className="d-refs">
+          <li>Schwaber, K. y Sutherland, J. (2020). The Scrum Guide.</li>
+          <li>Preston-Werner, T. Semantic Versioning 2.0.0. semver.org</li>
+          <li>Martin, R. C. (2017). Clean Architecture.</li>
+          <li>Cockburn, A. (2005). Hexagonal Architecture (Ports and Adapters).</li>
+          <li>Larman, C. y Vodde, B. (2016). Large-Scale Scrum (LeSS).</li>
+          <li>PMI (2021). PMBOK Guide, 7.ª edición.</li>
+          <li>GitLab Docs · Tags and Releases.</li>
+        </ul>
+      </Dos>
     </>,
+    <div className="d-final" key="f">
+      <p className="d-eti">Fin de la clase</p>
+      <h1>¡Gracias! Este es el <em>podio</em></h1>
+      <PodioFinal />
+    </div>,
   ] },
 ];
 
-export const TEMA_COL = Object.fromEntries(COLS.map((c, i) => [c.tema || c.id, i]));
+export const TEMA_COL = Object.fromEntries(COLS.map((c, i) => [c.tema, i]).filter(([k]) => k));
+export const ACT_COL = Object.fromEntries(COLS.map((c, i) => [c.act, i]).filter(([k]) => k));
