@@ -1,0 +1,106 @@
+{
+ "schema_version": 1,
+ "diagram_type": "tree",
+ "layout": {
+  "direction": "down"
+ },
+ "meta": {
+  "title": "Qué se entrega el 30 de noviembre",
+  "subtitle": "Seis grupos de entregables del capstone: el producto, el código, la documentación, la evidencia del proceso, la demo y la parte individual.",
+  "locale": "es",
+  "quality_profile": "showcase",
+  "output": "public/diagramas/entregables.html"
+ },
+ "nodes": [
+  {
+   "id": "root",
+   "label": "Delivery System v1.0.0"
+  },
+  {
+   "id": "prod",
+   "label": "Producto",
+   "sublabel": "release en GitLab",
+   "parent": "root"
+  },
+  {
+   "id": "cod",
+   "label": "Código",
+   "sublabel": "main + MRs revisados",
+   "parent": "root"
+  },
+  {
+   "id": "doc",
+   "label": "Documentación",
+   "sublabel": "README + wiki",
+   "parent": "root"
+  },
+  {
+   "id": "proc",
+   "label": "Proceso",
+   "sublabel": "board, sprints, actas",
+   "parent": "root"
+  },
+  {
+   "id": "demo",
+   "label": "Demo",
+   "sublabel": "guion + video",
+   "parent": "root"
+  },
+  {
+   "id": "ind",
+   "label": "Individual",
+   "sublabel": "commits, MRs, revisiones",
+   "parent": "root"
+  },
+  {
+   "id": "p1",
+   "label": "Tag v1.0.0",
+   "parent": "prod"
+  },
+  {
+   "id": "p2",
+   "label": "CHANGELOG",
+   "parent": "prod"
+  },
+  {
+   "id": "c1",
+   "label": "Pipeline en verde",
+   "parent": "cod"
+  },
+  {
+   "id": "c2",
+   "label": "Pruebas",
+   "parent": "cod"
+  },
+  {
+   "id": "d1",
+   "label": "Cómo ejecutarlo",
+   "parent": "doc"
+  },
+  {
+   "id": "d2",
+   "label": "Casos de uso",
+   "parent": "doc"
+  },
+  {
+   "id": "r1",
+   "label": "Issues con DoD",
+   "parent": "proc"
+  },
+  {
+   "id": "r2",
+   "label": "Retrospectiva",
+   "parent": "proc"
+  },
+  {
+   "id": "m1",
+   "label": "Recorrido feliz",
+   "parent": "demo"
+  },
+  {
+   "id": "m2",
+   "label": "Plan B",
+   "parent": "demo"
+  }
+ ]
+}
